@@ -76,8 +76,8 @@ constexpr float GRIPPER_OPEN_ANGLE  = 45.0f;   // Gripper open angle
 constexpr float GRIPPER_CLOSE_ANGLE = 80.0f;   // Gripper closed angle
 
 // Servo 3 limits (active when RT is ON)
-constexpr float SERVO3_OPEN_ANGLE   = 120.0f;  // D-pad UP target angle
-constexpr float SERVO3_CLOSE_ANGLE  = 50.0f;   // D-pad DOWN target angle
+constexpr float SERVO3_OPEN_ANGLE   = 135.0f;  // D-pad UP target angle
+constexpr float SERVO3_CLOSE_ANGLE  = 95.0f;   // D-pad DOWN target angle
 
 // Timing-based speed ramping parameters (deg/sec) - high responsiveness
 constexpr float ARM_MIN_SPEED       = 100.0f;  // Starting speed on button tap
