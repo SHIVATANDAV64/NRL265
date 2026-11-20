@@ -59,10 +59,10 @@ static TankDrive drive { leftMotor, rightMotor };
 // ============================================================
 
 // Arm and gripper limits (active when RT is OFF)
-constexpr float ARM_UP_ANGLE        = 35.0f;   // Raised arm limit angle
-constexpr float ARM_DOWN_ANGLE      = 105.0f;  // Lowered arm limit angle
-constexpr float GRIPPER_OPEN_ANGLE  = 45.0f;   // Gripper open limit angle
-constexpr float GRIPPER_CLOSE_ANGLE = 80.0f;   // Gripper closed limit angle
+constexpr float ARM_UP_ANGLE        = 30.0f;   // Raised arm limit angle
+constexpr float ARM_DOWN_ANGLE      = 100.0f;  // Lowered arm limit angle
+constexpr float GRIPPER_OPEN_ANGLE  = 85.0f;   // Gripper open limit angle
+constexpr float GRIPPER_CLOSE_ANGLE = 115.0f;   // Gripper closed limit angle
 
 // Servo 3 limits (active when RT is ON)
 constexpr float SERVO3_OPEN_ANGLE   = 135.0f;  // D-pad UP target angle
