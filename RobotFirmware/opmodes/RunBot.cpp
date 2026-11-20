@@ -26,7 +26,6 @@ static HexaDCMotor rightMotor {
 static HexaServo armServo {
     {
         .signalPin = SERVO_1,
-        .startAngle = 90.0f,    // Centered at 90 deg for calibration
         .startAngle = 105.0f,   // Start at full bottom (105 deg)
         .settleMs = 0           // Active holding torque
     }
@@ -36,7 +35,6 @@ static HexaServo armServo {
 static HexaServo gripperServo {
     {
         .signalPin = SERVO_2,
-        .startAngle = 80.0f,    // Initial configured angle (starts closed at 80 deg)
         .startAngle = 80.0f,    // Initial closed position (80 deg)
         .settleMs = 0           // Active holding torque
     }
@@ -46,8 +44,7 @@ static HexaServo gripperServo {
 static HexaServo servo3 {
     {
         .signalPin = SERVO_3,
-        .startAngle = 50.0f,    // Initial configured angle (starts closed at 50 deg)
-        .startAngle = 50.0f,    // Initial closed position (50 deg)
+        .startAngle = 95.0f,    // Initial closed position (95 deg)
         .settleMs = 0           // Active holding torque
     }
 };
@@ -58,22 +55,14 @@ static TankDrive drive { leftMotor, rightMotor };
 
 // ============================================================
 // PART 2: DEFINE SERVO TARGET ANGLES & RAMPING SPEEDS
-// PART 2: DEFINE 3-STOP ARM POSITIONS & SERVO LIMITS (Team 265)
+// Calibrated limits for Team 265 (ROBOFALCONS)
 // ============================================================
 
-// Calibrated limits from Calibrate Mode for Team 265 (RT is OFF)
+// Arm and gripper limits (active when RT is OFF)
 constexpr float ARM_UP_ANGLE        = 35.0f;   // Raised arm limit angle
 constexpr float ARM_DOWN_ANGLE      = 105.0f;  // Lowered arm limit angle
 constexpr float GRIPPER_OPEN_ANGLE  = 45.0f;   // Gripper open limit angle
 constexpr float GRIPPER_CLOSE_ANGLE = 80.0f;   // Gripper closed limit angle
-// 3 Arm Stop Angles: Full Top (35 deg), Middle (70 deg), Full Bottom (105 deg)
-constexpr float ARM_TOP_ANGLE       = 35.0f;   // Full top limit angle
-constexpr float ARM_MID_ANGLE       = 70.0f;   // Middle stop angle
-constexpr float ARM_BOTTOM_ANGLE    = 105.0f;  // Full bottom limit angle
-
-// Gripper limits for Team 265
-constexpr float GRIPPER_OPEN_ANGLE  = 45.0f;   // Gripper open angle
-constexpr float GRIPPER_CLOSE_ANGLE = 80.0f;   // Gripper closed angle
 
 // Servo 3 limits (active when RT is ON)
 constexpr float SERVO3_OPEN_ANGLE   = 135.0f;  // D-pad UP target angle
@@ -95,7 +84,6 @@ constexpr float SERVO3_RAMP_SEC     = 0.25f;   // Quick 0.25s ramp to full speed
 
 // ============================================================
 // PART 3: OPMODE IMPLEMENTATION
-// Driver-controlled TeleOp OpMode for Team ROBOFALCONS.
 // Driver-controlled TeleOp OpMode for Team ROBOFALCONS (265).
 // ============================================================
 
@@ -103,18 +91,12 @@ class fullcode : public NRLOpMode {
 
 private:
     // Tracks current angles for servos
-    float currentArmAngle = 90.0f;
-    float currentGripperAngle = 80.0f;
-    float currentServo3Angle = 50.0f;
-    // Tracks current arm stop: 0 = BOTTOM (105°), 1 = MID (70°), 2 = TOP (35°)
-    int currentArmStop = 0;
-    const float armStops[3] = { ARM_BOTTOM_ANGLE, ARM_MID_ANGLE, ARM_TOP_ANGLE };
+    float currentArmAngle     = ARM_DOWN_ANGLE;
+    float currentGripperAngle = GRIPPER_CLOSE_ANGLE;
+    float currentServo3Angle  = SERVO3_CLOSE_ANGLE;
 
     // Loop delta-time tracking
     uint32_t lastLoopMs = 0;
-    // Track state of gripper and servo 3
-    float currentGripperAngle = GRIPPER_CLOSE_ANGLE;
-    float currentServo3Angle  = SERVO3_CLOSE_ANGLE;
 
     // Button hold start timestamps (0 = not pressed)
     uint32_t armUpHoldStartMs = 0;
@@ -160,13 +142,15 @@ public:
         gripperServo.begin();
         servo3.begin();
 
-        // Sync tracked angles to servo start positions
-        currentArmAngle = armServo.getPosition();
-        currentGripperAngle = gripperServo.getPosition();
-        currentServo3Angle = servo3.getPosition();
-        // Initialize positions to safe defaults
-        currentArmStop = 0; // Bottom position (105°)
-        armServo.setPosition(armStops[currentArmStop]);
+        // Initialize positions to calibrated defaults
+        currentArmAngle = ARM_DOWN_ANGLE;
+        armServo.setPosition(currentArmAngle);
+
+        currentGripperAngle = GRIPPER_CLOSE_ANGLE;
+        gripperServo.setPosition(currentGripperAngle);
+
+        currentServo3Angle = SERVO3_CLOSE_ANGLE;
+        servo3.setPosition(currentServo3Angle);
 
         lastLoopMs = millis();
         armUpHoldStartMs = 0;
@@ -175,11 +159,6 @@ public:
         gripperCloseHoldStartMs = 0;
         servo3UpHoldStartMs = 0;
         servo3DownHoldStartMs = 0;
-        currentGripperAngle = GRIPPER_CLOSE_ANGLE;
-        gripperServo.setPosition(currentGripperAngle);
-
-        currentServo3Angle = SERVO3_CLOSE_ANGLE;
-        servo3.setPosition(currentServo3Angle);
     }
 
     void loop() override {
@@ -222,13 +201,6 @@ public:
             } else {
                 servo3UpHoldStartMs = 0;
                 servo3DownHoldStartMs = 0;
-            if (gamepad1.justPressed(BTN_DPAD_UP)) {
-                currentServo3Angle = SERVO3_OPEN_ANGLE;
-                servo3.setPosition(currentServo3Angle);
-            }
-            if (gamepad1.justPressed(BTN_DPAD_DOWN)) {
-                currentServo3Angle = SERVO3_CLOSE_ANGLE;
-                servo3.setPosition(currentServo3Angle);
             }
 
             telemetry.addData("Mode", "SERVO 3");
@@ -240,17 +212,15 @@ public:
             servo3UpHoldStartMs = 0;
             servo3DownHoldStartMs = 0;
 
+            // Optional direct shortcut: BTN_Y moves arm to MID (70 deg)
+            if (gamepad1.justPressed(BTN_Y)) {
+                currentArmAngle = 70.0f;
+                armServo.setPosition(currentArmAngle);
+            }
+
             // Arm link control (D-Pad UP to raise, D-Pad DOWN to lower)
             bool armUpPressed = gamepad1.pressed(BTN_DPAD_UP);
             bool armDownPressed = gamepad1.pressed(BTN_DPAD_DOWN);
-            // --- ARM 3-STOP STEPPING ---
-            // D-Pad UP: Step UP to next stop (Bottom -> Mid -> Top)
-            if (gamepad1.justPressed(BTN_DPAD_UP)) {
-                if (currentArmStop < 2) {
-                    currentArmStop++;
-                    armServo.setPosition(armStops[currentArmStop]);
-                }
-            }
 
             if (armUpPressed && !armDownPressed) {
                 armDownHoldStartMs = 0;
@@ -265,22 +235,11 @@ public:
             } else {
                 armUpHoldStartMs = 0;
                 armDownHoldStartMs = 0;
-            // D-Pad DOWN: Step DOWN to next stop (Top -> Mid -> Bottom)
-            if (gamepad1.justPressed(BTN_DPAD_DOWN)) {
-                if (currentArmStop > 0) {
-                    currentArmStop--;
-                    armServo.setPosition(armStops[currentArmStop]);
-                }
             }
 
             // Gripper claw control (D-Pad LEFT to open, D-Pad RIGHT to close)
             bool gripperOpenPressed = gamepad1.pressed(BTN_DPAD_LEFT);
             bool gripperClosePressed = gamepad1.pressed(BTN_DPAD_RIGHT);
-            // Optional direct shortcut: BTN_Y immediately moves to MID
-            if (gamepad1.justPressed(BTN_Y)) {
-                currentArmStop = 1;
-                armServo.setPosition(armStops[currentArmStop]);
-            }
 
             if (gripperOpenPressed && !gripperClosePressed) {
                 gripperCloseHoldStartMs = 0;
@@ -295,23 +254,11 @@ public:
             } else {
                 gripperOpenHoldStartMs = 0;
                 gripperCloseHoldStartMs = 0;
-            // --- GRIPPER CLAW CONTROL ---
-            // D-Pad LEFT to open (45°), D-Pad RIGHT to close (80°)
-            if (gamepad1.justPressed(BTN_DPAD_LEFT)) {
-                currentGripperAngle = GRIPPER_OPEN_ANGLE;
-                gripperServo.setPosition(currentGripperAngle);
-            }
-            if (gamepad1.justPressed(BTN_DPAD_RIGHT)) {
-                currentGripperAngle = GRIPPER_CLOSE_ANGLE;
-                gripperServo.setPosition(currentGripperAngle);
             }
 
             telemetry.addData("Mode", "ARM/GRIP");
             telemetry.addData("Arm", currentArmAngle);
             telemetry.addData("Gripper", currentGripperAngle);
-            telemetry.addData("Arm Stop", currentArmStop == 0 ? "BOTTOM" : (currentArmStop == 1 ? "MID" : "TOP"));
-            telemetry.addData("Arm Deg", armStops[currentArmStop]);
-            telemetry.addData("Gripper", currentGripperAngle == GRIPPER_OPEN_ANGLE ? "OPEN" : "CLOSED");
         }
     }
 
