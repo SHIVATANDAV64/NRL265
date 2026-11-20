@@ -173,16 +173,12 @@ enum class LineRef : uint8_t {
  */
 struct HexaLineArrayConfig {
     /// Mux select pins, in order S0, S1, S2. Channel index is binary S2:S1:S0.
-    uint8_t selPins[3] = { 18, 15, 16 };
+    // Default matching Arc-8 on DIGITAL_PORT_1 (D5=GPIO2) and DIGITAL_PORT_2 (D6=GPIO15, D7=GPIO16)
+    uint8_t selPins[3] = { 2, 15, 16 };
 
     /// Mux common output -> an ADC-capable pin.
-    ///
-    /// On ESP32-S3, ADC1 is GPIO1..10 and ADC2 is GPIO11..20. ADC2 is shared
-    /// with the WiFi radio, and the NRL engine keeps ESP-NOW up permanently,
-    /// so an ADC2 pin here can read badly or not at all. If readings look
-    /// dead or noisy with the robot connected, move this to GPIO1 (DIGITAL_1,
-    /// ADC1_CH0) and rewire.
-    uint8_t sigPin = 17;
+    // Default matching Arc-8 on DIGITAL_PORT_1 (D4=GPIO1 / ADC1_CH0)
+    uint8_t sigPin = 1;
 
     /// Settle time after switching the mux before sampling, microseconds.
     uint8_t settleUs = 15;
