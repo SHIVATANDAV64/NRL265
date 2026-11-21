@@ -21,7 +21,7 @@ to build here** — students never edit the controller. Your robot code lives in
 
 **If no serial device is found:** try another USB cable/port (no hubs), and if the
 board never appears in Device Manager under "Ports (COM & LPT)", install the
-CP210x driver: https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers
+CP210x driver: <https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers>
 
 Power users: `py -3 flash_controller.py --port COM7 --baud 115200` works too.
 
